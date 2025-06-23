@@ -20,25 +20,25 @@ public class Beatmap : MonoBehaviour
 
     bool checkedRound;
 
-    void Start()
+    public float BeatmapBpm;
+
+    void Awake()
     {
-        initBeatmap();
+        bpm.bpm = BeatmapBpm;
         BpmSynchronizer.OffBeat += nextCircle;
         BpmSynchronizer.OffBeat += BeatHandler;
         BpmSynchronizer.exitTriggerZone += circleColors;
         BpmSynchronizer.exitTriggerZone += countHits;
     }
 
+    void Start()
+    {
+        initBeatmap();
+    }
+
     public List<List<KeyCode>> beatmap = new List<List<KeyCode>>();
 
-    public string[] keycodes =
-    {
-        "EC",
-        "IK"
-    }
-    ;
-
-
+    public string[] keycodes = {} ;
 
     void initBeatmap()
     {
@@ -58,27 +58,13 @@ public class Beatmap : MonoBehaviour
     private KeyCode toPress1;
     private KeyCode toPress2;
 
-    void nextCircle(int beat)
+    void nextCircle(int beat) //Hanterar nästa set av keybindings som ska tryckas på // int beat är vilken takt vi är på
     {
-        beat -= 1;
+        beat -= 1; //-1 eftersom den kickar igång efter första slaget, aka vid beat 1 så ska man trycka på entry 0.
         if (beat > beatmap.Count - 1) return; //Betyder att mappen är slut
         toPress0 = findKeycodes(0, beat);
         toPress1 = findKeycodes(1, beat);
         toPress2 = findKeycodes(2, beat);
-    }
-
-    bool isEvenBeat;
-
-    void BeatHandler(int beat)
-    {
-        if (beat % 2 != 0)
-        {
-            isEvenBeat = true;
-        }
-        else
-        {
-            isEvenBeat = false;
-        }
     }
 
     KeyCode findKeycodes(int key, int beat)
@@ -91,16 +77,7 @@ public class Beatmap : MonoBehaviour
         return currentBeat;
     }
 
-
-
-    IEnumerator Wait()
-    {
-        yield return new WaitForSeconds(0.1f);
-        right.GetComponent<SpriteRenderer>().color = Color.white;
-        left.GetComponent<SpriteRenderer>().color = Color.white;
-    }
-
-    void circleColors(string hitormiss) //gotsomework to do here....
+    void circleColors(string hitormiss) //hanterar endast färger för debugging
     {
         if (hitormiss == "hit")
         {
@@ -126,6 +103,27 @@ public class Beatmap : MonoBehaviour
         }
 
         StartCoroutine(Wait());
+    }
+
+    IEnumerator Wait() //Behöver verkligen ett niceigare alternativ för en sleep
+    {
+        yield return new WaitForSeconds(0.1f);
+        right.GetComponent<SpriteRenderer>().color = Color.white;
+        left.GetComponent<SpriteRenderer>().color = Color.white;
+    }
+
+    bool isEvenBeat;
+
+    void BeatHandler(int beat) //Viktigt för att se ifall actionen ska ske på vänster eller höger sida
+    {
+        if (beat % 2 != 0)
+        {
+            isEvenBeat = true;
+        }
+        else
+        {
+            isEvenBeat = false;
+        }
     }
 
     void Update()
@@ -177,7 +175,7 @@ public class Beatmap : MonoBehaviour
         }
     }
 
-    void countHits(string hitormiss)
+    void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
     {
         if (checkedRound == false)
         {
