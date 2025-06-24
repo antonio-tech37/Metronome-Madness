@@ -7,6 +7,7 @@ public class BpmSynchronizer : MonoBehaviour
 {
     public float bpm = 120f; // Set this in the Inspector for your specific track
     public float beatOffset = 20f; // Optional: Adjust if your music has a lead-in before the first beat
+    public int beatsUntilStart;
 
     private AudioSource audioSource;
     private double nextBeatTime; // Using double for higher precision with dspTime
@@ -26,8 +27,8 @@ public class BpmSynchronizer : MonoBehaviour
     public static event exitTriggerZoneDelegate exitTriggerZone;
 
     public double triggerZone = 0.3;
-    public bool isTriggerZone;
-    private bool isOnBeat = true;
+    public bool isTriggerZone = false;
+    private bool isOnBeat = false;
 
     void Awake()
     {
@@ -36,10 +37,10 @@ public class BpmSynchronizer : MonoBehaviour
 
     void Start()
     {
-        double startTime = AudioSettings.dspTime + 1;
+        double startTime = AudioSettings.dspTime + 4;
         audioSource.PlayScheduled(startTime);
-        beatInterval = (60f / bpm);
-        nextBeatTime = startTime + beatOffset;
+        beatInterval = (60.0 / bpm);
+        nextBeatTime = startTime + beatOffset + (beatInterval * beatsUntilStart);
         nextOffBeatTime = nextBeatTime + (beatInterval / 2f);
         currentBeat = 0;
     }
@@ -48,11 +49,13 @@ public class BpmSynchronizer : MonoBehaviour
     {
         if (AudioSettings.dspTime >= nextBeatTime - triggerZone && isTriggerZone == false && isOnBeat == false)
         {
+            Debug.Log("Entered triggerzone");
             isTriggerZone = true;
         }
 
         if (AudioSettings.dspTime >= nextBeatTime - beatInterval + triggerZone && isTriggerZone == true && isOnBeat == true)
         {
+            Debug.Log("Exited triggerzone");
             if (exitTriggerZone != null)
             {
                 exitTriggerZone("init");

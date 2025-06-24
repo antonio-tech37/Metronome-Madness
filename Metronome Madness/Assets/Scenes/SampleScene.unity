@@ -245,6 +245,7 @@ MonoBehaviour:
   r2: {fileID: 1937436100}
   bpm: {fileID: 1669132304}
   BeatmapBpm: 125
+  beatsUntilStart: 4
   hitCircles:
   - 01
   - 02
@@ -775,7 +776,7 @@ AudioSource:
   m_audioClip: {fileID: 8300000, guid: ea63a9f0c926cce42a09a9fcc5f5ca6f, type: 3}
   m_Resource: {fileID: 8300000, guid: ea63a9f0c926cce42a09a9fcc5f5ca6f, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.132
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -873,6 +874,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bpm: 125
   beatOffset: 0.12
+  beatsUntilStart: 35
   currentBeat: 0
   triggerZone: 0.2
   isTriggerZone: 0

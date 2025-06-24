@@ -30,6 +30,7 @@ public class Beatmap : MonoBehaviour
     bool checkedRound;
 
     public float BeatmapBpm;
+    public int beatsUntilStart;
 
     void Awake()
     {
@@ -106,13 +107,14 @@ public class Beatmap : MonoBehaviour
     void nextCircle(int beat) //Hanterar nästa set av keybindings som ska tryckas på // int beat är vilken takt vi är på
     {
         beat -= 1; //-1 eftersom den kickar igång efter första slaget, aka vid beat 1 så ska man trycka på entry 0.
-        if (beat > beatmap.Count - 1) return; //Betyder att mappen är slut
+        if (beat >= beatmap.Count) return; //Betyder att mappen är slut
         toPress0 = 0;
         toPress1 = 0;
         toPress2 = 0;
         toPress0 = findKeycodes(0, beat);
         toPress1 = findKeycodes(1, beat);
         toPress2 = findKeycodes(2, beat);
+        Debug.Log(toPress0);
         previousBeatIndex = beat;
     }
 
