@@ -32,12 +32,11 @@ public class BpmSynchronizer : MonoBehaviour
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
-
     }
 
     void Start()
     {
-        double startTime = AudioSettings.dspTime + 0.1;
+        double startTime = AudioSettings.dspTime + 1;
         audioSource.PlayScheduled(startTime);
         beatInterval = (60f / bpm);
         nextBeatTime = startTime + beatOffset;

@@ -5,12 +5,21 @@ using NUnit.Framework;
 using UnityEngine.InputSystem;
 using System;
 using Unity.VisualScripting;
+using System.Linq;
 
 public class Beatmap : MonoBehaviour
 {
 
-    public GameObject left;
     public GameObject right;
+
+    public GameObject left;
+    public GameObject l0;
+    public GameObject l1;
+    public GameObject l2;
+
+    public GameObject r0;
+    public GameObject r1;
+    public GameObject r2;
 
     public BpmSynchronizer bpm;
 
@@ -27,7 +36,7 @@ public class Beatmap : MonoBehaviour
         bpm.bpm = BeatmapBpm;
         BpmSynchronizer.OffBeat += nextCircle;
         BpmSynchronizer.OffBeat += BeatHandler;
-        BpmSynchronizer.exitTriggerZone += circleColors;
+        //BpmSynchronizer.exitTriggerZone += circleColors;
         BpmSynchronizer.exitTriggerZone += countHits;
     }
 
@@ -38,19 +47,55 @@ public class Beatmap : MonoBehaviour
 
     public List<List<KeyCode>> beatmap = new List<List<KeyCode>>();
 
-    public string[] keycodes = {} ;
+    public string[] hitCircles =
+    {
+        "0",
+        "0",
+        "0",
+        "0"
+    } ;
 
     void initBeatmap()
     {
-        foreach (string keycode in keycodes)
+        int beatMapPos = 0;
+        foreach (string circle in hitCircles)
         {
-            List<KeyCode> beat = new List<KeyCode>();
-            foreach (char key in keycode)
+            List<KeyCode> keyCodes = new List<KeyCode>();
+            foreach (char key in circle)
             {
-                Debug.Log("Looping chars");
-                beat.Add(Enum.Parse<KeyCode>(key.ToString()));
+                KeyCode decodedKey = decodeKeyCode(key, beatMapPos);
+                keyCodes.Add(decodedKey);
             }
-            beatmap.Add(beat);
+            beatmap.Add(keyCodes);
+            beatMapPos++;
+        }
+    }
+
+    private KeyCode[] evenKeys =
+    {
+        KeyCode.I,
+        KeyCode.J,
+        KeyCode.N
+    };
+
+    private KeyCode[] oddKeys =
+    {
+        KeyCode.E,
+        KeyCode.D,
+        KeyCode.C
+    };
+
+    KeyCode decodeKeyCode(char key, int pos)
+    {
+        int index = key - '0'; //Gör om char(ascii/unicode) till int för indexing
+
+        if (pos % 2 == 0 || pos == 0)
+        {
+            return evenKeys[index];
+        }
+        else
+        {
+            return oddKeys[index];
         }
     }
 
@@ -62,10 +107,16 @@ public class Beatmap : MonoBehaviour
     {
         beat -= 1; //-1 eftersom den kickar igång efter första slaget, aka vid beat 1 så ska man trycka på entry 0.
         if (beat > beatmap.Count - 1) return; //Betyder att mappen är slut
+        toPress0 = 0;
+        toPress1 = 0;
+        toPress2 = 0;
         toPress0 = findKeycodes(0, beat);
         toPress1 = findKeycodes(1, beat);
         toPress2 = findKeycodes(2, beat);
+        previousBeatIndex = beat;
     }
+
+    private int previousBeatIndex;
 
     KeyCode findKeycodes(int key, int beat)
     {
@@ -77,39 +128,74 @@ public class Beatmap : MonoBehaviour
         return currentBeat;
     }
 
-    void circleColors(string hitormiss) //hanterar endast färger för debugging
+    List<SpriteRenderer> circleToLight = new List<SpriteRenderer>();
+
+    void circleColors(string hitormiss, int circle) //hanterar endast färger för debugging
     {
+        //Debug.Log(hitCircles[previousBeatIndex]);
+        Debug.Log(hitormiss + " " + circle);
+        GameObject activeObject0;
+        GameObject activeObject1;
+        GameObject activeObject2;
+
+        if (isEvenBeat)
+        {
+            activeObject0 = r0;
+            activeObject1 = r1;
+            activeObject2 = r2;
+        }
+        else
+        {
+            activeObject0 = l0;
+            activeObject1 = l1;
+            activeObject2 = l2;
+        }
+
+        circleToLight.Clear();
+
+        if (hitCircles[previousBeatIndex].Contains("0"))
+        {
+            circleToLight.Add(activeObject0.GetComponent<SpriteRenderer>());
+        }
+        if (hitCircles[previousBeatIndex].Contains("1"))
+        {
+            circleToLight.Add(activeObject1.GetComponent<SpriteRenderer>());
+        }
+        if (hitCircles[previousBeatIndex].Contains("2"))
+        {
+            circleToLight.Add(activeObject2.GetComponent<SpriteRenderer>());
+        }
+
+        Color colorWith = Color.blue;
+
         if (hitormiss == "hit")
         {
-            if (isEvenBeat == true)
-            {
-                right.GetComponent<SpriteRenderer>().color = Color.green;
-            }
-            else
-            {
-                left.GetComponent<SpriteRenderer>().color = Color.green;
-            }
+            colorWith = Color.green;
         }
         else if (hitormiss == "miss")
         {
-            if (isEvenBeat == true)
-            {
-                right.GetComponent<SpriteRenderer>().color = Color.red;
-            }
-            else
-            {
-                left.GetComponent<SpriteRenderer>().color = Color.red;
-            }
+            colorWith = Color.red;
         }
 
-        StartCoroutine(Wait());
+        int iterator = 0;
+        foreach (SpriteRenderer hitCircle in circleToLight)
+        {
+            if (circle == iterator)
+            {
+                SpriteRenderer currentCircle = hitCircle;
+                currentCircle.color = colorWith;
+                StartCoroutine(Wait(currentCircle));
+            }
+            //Debug.Log(hitCircle);
+            iterator++;
+
+        }
     }
 
-    IEnumerator Wait() //Behöver verkligen ett niceigare alternativ för en sleep
+    IEnumerator Wait(SpriteRenderer circle) //Behöver verkligen ett niceigare alternativ för en sleep
     {
-        yield return new WaitForSeconds(0.1f);
-        right.GetComponent<SpriteRenderer>().color = Color.white;
-        left.GetComponent<SpriteRenderer>().color = Color.white;
+        yield return new WaitForSeconds(0.2f);
+        circle.color = Color.white;
     }
 
     bool isEvenBeat;
@@ -133,41 +219,35 @@ public class Beatmap : MonoBehaviour
         {
             checkedRound = false;
 
-            if (Input.GetKeyDown(toPress0))
+            if (Input.GetKeyDown(toPress0) && toPress0 != 0)
             {
-                if (pressed0)
-                {
-                    //Debug.Log("You double tapped : " + toPress0);
-                }
-                else
-                {
-                    circleColors("hit");
-                    pressed0 = true;
-                }
-
+                circleColors("hit", 0);
+                pressed0 = true;
             }
 
-            if (Input.GetKeyDown(toPress1))
+            if (Input.GetKeyDown(toPress1) && toPress1 != 0)
             {
-                if (pressed1)
+                if (toPress1 == 0)
                 {
-                    //Debug.Log("You double tapped : " + toPress1);
+                    circleColors("miss", 1);
                 }
                 else
                 {
+                    circleColors("hit", 1);
                     pressed1 = true;
                 }
 
             }
 
-            if (Input.GetKeyDown(toPress2))
+            if (Input.GetKeyDown(toPress2) && toPress2 != 0)
             {
-                if (pressed2)
+                if (toPress2 == 0)
                 {
-                    //Debug.Log("You double tapped : " + toPress2);
+                    circleColors("miss", 2);
                 }
                 else
                 {
+                    circleColors("hit", 2);
                     pressed2 = true;
                 }
 
@@ -177,6 +257,8 @@ public class Beatmap : MonoBehaviour
 
     void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
     {
+        //Debug.Log(pressed0 + " " + pressed1 + " " + pressed2);
+
         if (checkedRound == false)
         {
             if (pressed0)
@@ -185,7 +267,11 @@ public class Beatmap : MonoBehaviour
             }
             else
             {
-                circleColors("miss");
+                if (hitCircles[previousBeatIndex].Length >= 1)
+                {
+                    circleColors("miss", 0);
+                }
+                
                 //Debug.Log("You missed : " + toPress0 + " :(");
             }
 
@@ -195,10 +281,30 @@ public class Beatmap : MonoBehaviour
             }
             else
             {
+                if (hitCircles[previousBeatIndex].Length >= 2)
+                {
+                    circleColors("miss", 1);
+                }
+                
+                //Debug.Log("You missed : " + toPress1 + " :(");
+            }
+
+            if (pressed2)
+            {
+                Debug.Log("You hit : " + toPress1);
+            }
+            else
+            {
+                if (hitCircles[previousBeatIndex].Length >= 3)
+                {
+                    circleColors("miss", 2);
+                }
+                
                 //Debug.Log("You missed : " + toPress1 + " :(");
             }
             pressed0 = false;
             pressed1 = false;
+            pressed2 = false;
             checkedRound = true;
         }
     }
