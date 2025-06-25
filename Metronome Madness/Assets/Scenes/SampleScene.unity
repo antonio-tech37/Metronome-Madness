@@ -874,7 +874,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bpm: 125
   beatOffset: 0.12
-  beatsUntilStart: 35
+  beatsUntilStart: 2
   currentBeat: 0
   triggerZone: 0.2
   isTriggerZone: 0

@@ -36,28 +36,38 @@ public class Beatmap : MonoBehaviour
     {
         bpm.bpm = BeatmapBpm;
         BpmSynchronizer.OffBeat += nextCircle;
+        BpmSynchronizer.OnBeat += BeatHandler;
         BpmSynchronizer.OffBeat += BeatHandler;
-        //BpmSynchronizer.exitTriggerZone += circleColors;
+        BpmSynchronizer.OnBeat += upcomingCircle;
         BpmSynchronizer.exitTriggerZone += countHits;
     }
 
     void Start()
     {
         initBeatmap();
+        //upcomingCircle(0);
     }
 
     public List<List<KeyCode>> beatmap = new List<List<KeyCode>>();
 
-    public string[] hitCircles =
-    {
-        "0",
-        "0",
-        "0",
-        "0"
-    } ;
+    public List<String> hitCircles = new List<string>();
+
+    // public string[] hitCircles =
+    // {
+    //     "0",
+    //     "0",
+    //     "0",
+    //     "0"
+    // };
 
     void initBeatmap()
     {
+        int iterator = 0;
+        while (hitCircles.Count() < 128)
+        {
+            hitCircles.Add(hitCircles[iterator]);
+            iterator++;   
+        }
         int beatMapPos = 0;
         foreach (string circle in hitCircles)
         {
@@ -118,13 +128,62 @@ public class Beatmap : MonoBehaviour
         previousBeatIndex = beat;
     }
 
+    List<int> upcomingCircles = new List<int>();
+
+    void upcomingCircle(int beat)
+    {
+        if (beat >= hitCircles.Count())
+        {
+            beat = hitCircles.Count() - 1;
+        }
+        upcomingCircles.Clear();
+        foreach (char circle in hitCircles[beat])
+        {
+            int add = circle - '0';
+            upcomingCircles.Add(add);
+        }
+        foreach (int index in upcomingCircles)
+        {
+            if (!isEvenBeat)
+            {
+                switch (index)
+                {
+                    case 0:
+                        r0.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                    case 1:
+                        r1.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                    case 2:
+                        r2.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                }
+            }
+            else
+            {
+                switch (index)
+                {
+                    case 0:
+                        l0.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                    case 1:
+                        l1.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                    case 2:
+                        l2.GetComponent<SpriteRenderer>().color = Color.blue;
+                        break;
+                }                
+            }
+        } 
+    }
     private int previousBeatIndex;
+
 
     KeyCode findKeycodes(int key, int beat)
     {
         if (key > beatmap[beat].Count - 1)
         {
-            return KeyCode.Exclaim;
+            return KeyCode.None;
         }
         KeyCode currentBeat = beatmap[beat][key];
         return currentBeat;
@@ -153,11 +212,11 @@ public class Beatmap : MonoBehaviour
             activeObject2 = l2;
         }
 
-        circleToLight.Clear();
 
+        circleToLight.Clear();
         if (hitCircles[previousBeatIndex].Contains("0"))
         {
-            circleToLight.Add(activeObject0.GetComponent<SpriteRenderer>());
+            circleToLight.Add(activeObject0.GetComponent<SpriteRenderer>());    
         }
         if (hitCircles[previousBeatIndex].Contains("1"))
         {
@@ -178,7 +237,6 @@ public class Beatmap : MonoBehaviour
         {
             colorWith = Color.red;
         }
-
         int iterator = 0;
         foreach (SpriteRenderer hitCircle in circleToLight)
         {
@@ -255,6 +313,16 @@ public class Beatmap : MonoBehaviour
 
             }
         }
+        if (!bpm.isTriggerZone)
+        {
+            if (Input.anyKeyDown)
+            {
+                circleColors("miss", 0);
+                circleColors("miss", 1);
+                circleColors("miss", 2);
+            }
+        }
+
     }
 
     void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime

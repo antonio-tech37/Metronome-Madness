@@ -28,7 +28,7 @@ public class BpmSynchronizer : MonoBehaviour
 
     public double triggerZone = 0.3;
     public bool isTriggerZone = false;
-    private bool isOnBeat = false;
+    private bool isOnBeat = true;
 
     void Awake()
     {
@@ -49,13 +49,13 @@ public class BpmSynchronizer : MonoBehaviour
     {
         if (AudioSettings.dspTime >= nextBeatTime - triggerZone && isTriggerZone == false && isOnBeat == false)
         {
-            Debug.Log("Entered triggerzone");
+            //Debug.Log("Entered triggerzone");
             isTriggerZone = true;
         }
 
         if (AudioSettings.dspTime >= nextBeatTime - beatInterval + triggerZone && isTriggerZone == true && isOnBeat == true)
         {
-            Debug.Log("Exited triggerzone");
+            //Debug.Log("Exited triggerzone");
             if (exitTriggerZone != null)
             {
                 exitTriggerZone("init");
@@ -66,11 +66,11 @@ public class BpmSynchronizer : MonoBehaviour
         if (AudioSettings.dspTime >= nextBeatTime)
         {
             
-            //Debug.Log("On Beat "+ AudioSettings.dspTime);
+            Debug.Log("On Beat "+ currentBeat);
 
             if (OnBeat != null) 
             {
-                OnBeat(currentBeat); 
+                OnBeat(currentBeat);
             }
 
 
