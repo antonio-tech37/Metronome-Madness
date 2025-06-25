@@ -5,6 +5,7 @@ using NUnit.Framework; // For EventArgs if you use a standard event pattern
 [RequireComponent(typeof(AudioSource))] // Ensures there's an AudioSource component on this GameObject
 public class BpmSynchronizer : MonoBehaviour
 {
+    public ticker ticker;
     public float bpm = 120f; // Set this in the Inspector for your specific track
     public float beatOffset = 20f; // Optional: Adjust if your music has a lead-in before the first beat
     public int beatsUntilStart;
@@ -41,8 +42,10 @@ public class BpmSynchronizer : MonoBehaviour
         audioSource.PlayScheduled(startTime);
         beatInterval = (60.0 / bpm);
         nextBeatTime = startTime + beatOffset + (beatInterval * beatsUntilStart);
+        ticker.rotationDuration = (float)nextBeatTime - (float)AudioSettings.dspTime;
         nextOffBeatTime = nextBeatTime + (beatInterval / 2f);
         currentBeat = 0;
+        ticker.isRotating = true;
     }
 
     void Update()

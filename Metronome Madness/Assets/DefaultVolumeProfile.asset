@@ -210,7 +210,7 @@ MonoBehaviour:
     m_Value: 0
   response:
     m_OverrideState: 1
-    m_Value: 0.8
+    m_Value: 0.189
   texture:
     m_OverrideState: 1
     m_Value: {fileID: 0}
@@ -464,7 +464,7 @@ MonoBehaviour:
   active: 1
   mode:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   quality:
     m_OverrideState: 1
     m_Value: 0
@@ -473,7 +473,7 @@ MonoBehaviour:
     m_Value: 0
   clamp:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0.0264
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

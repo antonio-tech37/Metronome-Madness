@@ -3,7 +3,7 @@ using UnityEngine;
 public class ticker : MonoBehaviour
 {
 
-    public float targetAngleZ;
+    public float targetAngleZ = 40;
 
     public float rotationDuration;
 
@@ -12,7 +12,7 @@ public class ticker : MonoBehaviour
 
     private float rotationTimer = 0f;
 
-    private bool isRotating = false;
+    public bool isRotating = false;
 
     public BpmSynchronizer bpm;
 
@@ -20,12 +20,11 @@ public class ticker : MonoBehaviour
     void OnEnable()
     {
         BpmSynchronizer.OnBeat += HandleOnBeat;
-
     }
 
     void Start()
     {
-        rotationDuration = 60f / bpm.bpm;
+        //rotationDuration = 60f / bpm.bpm;
 
         startRotation = transform.rotation;
 
@@ -61,6 +60,7 @@ public class ticker : MonoBehaviour
         targetAngleZ = targetAngleZ * (-1);
         targetRotation = Quaternion.Euler(0, 0, targetAngleZ);
         rotationTimer = 0f;
+        rotationDuration = 60f / bpm.bpm;
         isRotating = true;
     }
 

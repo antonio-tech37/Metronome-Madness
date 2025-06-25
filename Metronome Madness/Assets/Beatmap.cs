@@ -9,7 +9,11 @@ using System.Linq;
 
 public class Beatmap : MonoBehaviour
 {
+    //INIT settings
+    public float BeatmapBpm;
+    public int beatsUntilStart;
 
+    //Game Objects
     public GameObject right;
 
     public GameObject left;
@@ -21,20 +25,50 @@ public class Beatmap : MonoBehaviour
     public GameObject r1;
     public GameObject r2;
 
-    public BpmSynchronizer bpm;
+    public BpmSynchronizer bpm; //BPM eventen
 
+    //bools för hitreg
     bool pressed0;
     bool pressed1;
     bool pressed2;
-
+// Keycodes som byts varje beat, det är dessa som vid varje beat ska tryckas på
+    private KeyCode toPress0;
+    private KeyCode toPress1;
+    private KeyCode toPress2;
+    //Misc vars
+    public int missedCircles = 0;
+    public int scoredCircles = 0;
+    private int previousBeatIndex;
     bool checkedRound;
+    //Lists
+    public List<List<KeyCode>> beatmap = new List<List<KeyCode>>(); // En lista som innehåller listor av keycodes som ska tryckas i sucession
+    public List<String> hitCircles = new List<string>(); // En lista vars index innehåller en string av de circles som ska tryckas på, konverteras till char sen till keycode
+    private string[] randiBeatmap = //RNG beatmap
+    {
+        "0",
+        "1",
+        "2"
+    };
 
-    public float BeatmapBpm;
-    public int beatsUntilStart;
+    //Keybinds
+    private KeyCode[] evenKeys =
+    {
+        KeyCode.I,
+        KeyCode.J,
+        KeyCode.N
+    };
 
+    private KeyCode[] oddKeys =
+    {
+        KeyCode.E,
+        KeyCode.D,
+        KeyCode.C
+    };
+    
     void Awake()
     {
         bpm.bpm = BeatmapBpm;
+        bpm.beatsUntilStart = beatsUntilStart;
         BpmSynchronizer.OffBeat += nextCircle;
         BpmSynchronizer.OnBeat += BeatHandler;
         BpmSynchronizer.OffBeat += BeatHandler;
@@ -45,29 +79,17 @@ public class Beatmap : MonoBehaviour
     void Start()
     {
         initBeatmap();
-        //upcomingCircle(0);
+        upcomingCircle(0);
     }
 
-    public List<List<KeyCode>> beatmap = new List<List<KeyCode>>();
-
-    public List<String> hitCircles = new List<string>();
-
-    // public string[] hitCircles =
-    // {
-    //     "0",
-    //     "0",
-    //     "0",
-    //     "0"
-    // };
-
+//Beatmap init sekvens, initierar beatmap listan
     void initBeatmap()
     {
-        int iterator = 0;
-        while (hitCircles.Count() < 128)
+        for (int i = 0; i < 512; i++)
         {
-            hitCircles.Add(hitCircles[iterator]);
-            iterator++;   
+            hitCircles.Add(randiBeatmap[UnityEngine.Random.Range(0,randiBeatmap.Length)]);
         }
+        //
         int beatMapPos = 0;
         foreach (string circle in hitCircles)
         {
@@ -82,19 +104,6 @@ public class Beatmap : MonoBehaviour
         }
     }
 
-    private KeyCode[] evenKeys =
-    {
-        KeyCode.I,
-        KeyCode.J,
-        KeyCode.N
-    };
-
-    private KeyCode[] oddKeys =
-    {
-        KeyCode.E,
-        KeyCode.D,
-        KeyCode.C
-    };
 
     KeyCode decodeKeyCode(char key, int pos)
     {
@@ -110,26 +119,188 @@ public class Beatmap : MonoBehaviour
         }
     }
 
-    private KeyCode toPress0;
-    private KeyCode toPress1;
-    private KeyCode toPress2;
+    List<KeyCode> toPressKeys = new List<KeyCode>();
 
     void nextCircle(int beat) //Hanterar nästa set av keybindings som ska tryckas på // int beat är vilken takt vi är på
     {
         beat -= 1; //-1 eftersom den kickar igång efter första slaget, aka vid beat 1 så ska man trycka på entry 0.
         if (beat >= beatmap.Count) return; //Betyder att mappen är slut
+        //Nollställ keycodes
         toPress0 = 0;
         toPress1 = 0;
         toPress2 = 0;
+        //Initera från listan
         toPress0 = findKeycodes(0, beat);
         toPress1 = findKeycodes(1, beat);
         toPress2 = findKeycodes(2, beat);
-        Debug.Log(toPress0);
+
+        toPressKeys.Clear();
+        toPressKeys.Add(toPress0);
+        toPressKeys.Add(toPress1);
+        toPressKeys.Add(toPress2);
+
+        //Loggar även beatet
         previousBeatIndex = beat;
     }
+    KeyCode findKeycodes(int key, int beat)
+    {
+        if (key > beatmap[beat].Count - 1)
+        {
+            return KeyCode.None;
+        }
+        KeyCode currentBeat = beatmap[beat][key];
+        return currentBeat;
+    }
 
+
+    bool isEvenBeat;
+
+    void BeatHandler(int beat) //Viktigt för att se ifall actionen ska ske på vänster eller höger sida
+    {
+        if (beat % 2 != 0)
+        {
+            isEvenBeat = true;
+        }
+        else
+        {
+            isEvenBeat = false;
+        }
+    }
+
+    void checkKeyPress(KeyCode keyPressed)
+    {
+        bool pressedKey = false;
+        KeyCode keyId;
+        switch (keyPressed)
+        {
+            case KeyCode toPress0:
+                pressed0
+                break;
+        }
+        if (pressedKey)
+        {
+            
+        }
+        
+    }
+
+    void Update()
+    {
+
+        if (bpm.isTriggerZone)
+        {
+            checkedRound = false;
+
+            if (Input.GetKeyDown(toPress0) && toPress0 != 0)
+            {
+                checkKeyPress(toPress0);
+                circleColors("hit", 0);
+                pressed0 = true;
+            }
+
+            if (Input.GetKeyDown(toPress1) && toPress1 != 0)
+            {
+                if (toPress1 == 0)
+                {
+                    circleColors("miss", 1);
+                }
+                else
+                {
+                    circleColors("hit", 1);
+                    pressed1 = true;
+                }
+
+            }
+
+            if (Input.GetKeyDown(toPress2) && toPress2 != 0)
+            {
+                if (toPress2 == 0)
+                {
+                    circleColors("miss", 2);
+                }
+                else
+                {
+                    circleColors("hit", 2);
+                    pressed2 = true;
+                }
+
+            }
+        }
+        if (!bpm.isTriggerZone)
+        {
+            if (Input.anyKeyDown)
+            {
+                circleColors("miss", 0);
+                circleColors("miss", 1);
+                circleColors("miss", 2);
+            }
+        }
+
+    }
+
+
+    void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
+    {
+        //Debug.Log(pressed0 + " " + pressed1 + " " + pressed2);
+
+        if (checkedRound == false)
+        {
+            if (pressed0)
+            {
+                scoredCircles += 1;
+                Debug.Log("You hit : " + toPress0);
+            }
+            else
+            {
+                if (hitCircles[previousBeatIndex].Length >= 1)
+                {
+                    missedCircles += 1;
+                    circleColors("miss", 0);
+                }
+                
+                //Debug.Log("You missed : " + toPress0 + " :(");
+            }
+
+            if (pressed1)
+            {
+                scoredCircles += 1;
+                Debug.Log("You hit : " + toPress1);
+            }
+            else
+            {
+                if (hitCircles[previousBeatIndex].Length >= 2)
+                {
+                    missedCircles += 1;
+                    circleColors("miss", 1);
+                }
+                
+                //Debug.Log("You missed : " + toPress1 + " :(");
+            }
+
+            if (pressed2)
+            {
+                scoredCircles += 1;
+                Debug.Log("You hit : " + toPress1);
+            }
+            else
+            {
+                if (hitCircles[previousBeatIndex].Length >= 3)
+                {
+                    missedCircles += 1;
+                    circleColors("miss", 2);
+                }
+                
+                //Debug.Log("You missed : " + toPress1 + " :(");
+            }
+            pressed0 = false;
+            pressed1 = false;
+            pressed2 = false;
+            checkedRound = true;
+        }
+    }
+
+    //Hanterar graphics för de circlar som ska tryckas på härnäst
     List<int> upcomingCircles = new List<int>();
-
     void upcomingCircle(int beat)
     {
         if (beat >= hitCircles.Count())
@@ -175,18 +346,6 @@ public class Beatmap : MonoBehaviour
                 }                
             }
         } 
-    }
-    private int previousBeatIndex;
-
-
-    KeyCode findKeycodes(int key, int beat)
-    {
-        if (key > beatmap[beat].Count - 1)
-        {
-            return KeyCode.None;
-        }
-        KeyCode currentBeat = beatmap[beat][key];
-        return currentBeat;
     }
 
     List<SpriteRenderer> circleToLight = new List<SpriteRenderer>();
@@ -256,126 +415,5 @@ public class Beatmap : MonoBehaviour
     {
         yield return new WaitForSeconds(0.2f);
         circle.color = Color.white;
-    }
-
-    bool isEvenBeat;
-
-    void BeatHandler(int beat) //Viktigt för att se ifall actionen ska ske på vänster eller höger sida
-    {
-        if (beat % 2 != 0)
-        {
-            isEvenBeat = true;
-        }
-        else
-        {
-            isEvenBeat = false;
-        }
-    }
-
-    void Update()
-    {
-
-        if (bpm.isTriggerZone)
-        {
-            checkedRound = false;
-
-            if (Input.GetKeyDown(toPress0) && toPress0 != 0)
-            {
-                circleColors("hit", 0);
-                pressed0 = true;
-            }
-
-            if (Input.GetKeyDown(toPress1) && toPress1 != 0)
-            {
-                if (toPress1 == 0)
-                {
-                    circleColors("miss", 1);
-                }
-                else
-                {
-                    circleColors("hit", 1);
-                    pressed1 = true;
-                }
-
-            }
-
-            if (Input.GetKeyDown(toPress2) && toPress2 != 0)
-            {
-                if (toPress2 == 0)
-                {
-                    circleColors("miss", 2);
-                }
-                else
-                {
-                    circleColors("hit", 2);
-                    pressed2 = true;
-                }
-
-            }
-        }
-        if (!bpm.isTriggerZone)
-        {
-            if (Input.anyKeyDown)
-            {
-                circleColors("miss", 0);
-                circleColors("miss", 1);
-                circleColors("miss", 2);
-            }
-        }
-
-    }
-
-    void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
-    {
-        //Debug.Log(pressed0 + " " + pressed1 + " " + pressed2);
-
-        if (checkedRound == false)
-        {
-            if (pressed0)
-            {
-                Debug.Log("You hit : " + toPress0);
-            }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 1)
-                {
-                    circleColors("miss", 0);
-                }
-                
-                //Debug.Log("You missed : " + toPress0 + " :(");
-            }
-
-            if (pressed1)
-            {
-                Debug.Log("You hit : " + toPress1);
-            }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 2)
-                {
-                    circleColors("miss", 1);
-                }
-                
-                //Debug.Log("You missed : " + toPress1 + " :(");
-            }
-
-            if (pressed2)
-            {
-                Debug.Log("You hit : " + toPress1);
-            }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 3)
-                {
-                    circleColors("miss", 2);
-                }
-                
-                //Debug.Log("You missed : " + toPress1 + " :(");
-            }
-            pressed0 = false;
-            pressed1 = false;
-            pressed2 = false;
-            checkedRound = true;
-        }
     }
 }
