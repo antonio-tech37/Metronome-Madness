@@ -51,6 +51,15 @@ public class Beatmap : MonoBehaviour
     };
 
     //Keybinds
+    private KeyCode[] keyBinds =
+    {
+        KeyCode.I,
+        KeyCode.J,
+        KeyCode.N,
+        KeyCode.E,
+        KeyCode.D,
+        KeyCode.C
+    };
     private KeyCode[] evenKeys =
     {
         KeyCode.I,
@@ -167,63 +176,34 @@ public class Beatmap : MonoBehaviour
         }
     }
 
-    void checkKeyPress(KeyCode keyPressed)
-    {
-        bool pressedKey = false;
-        KeyCode keyId;
-        switch (keyPressed)
-        {
-            case KeyCode toPress0:
-                pressed0
-                break;
-        }
-        if (pressedKey)
-        {
-            
-        }
-        
-    }
-
     void Update()
     {
-
         if (bpm.isTriggerZone)
         {
             checkedRound = false;
-
-            if (Input.GetKeyDown(toPress0) && toPress0 != 0)
+            if (Input.GetKeyDown(keyBinds[0]))
             {
-                checkKeyPress(toPress0);
-                circleColors("hit", 0);
-                pressed0 = true;
+                checkKeyPress(keyBinds[0]);
             }
-
-            if (Input.GetKeyDown(toPress1) && toPress1 != 0)
+            if (Input.GetKeyDown(keyBinds[1]))
             {
-                if (toPress1 == 0)
-                {
-                    circleColors("miss", 1);
-                }
-                else
-                {
-                    circleColors("hit", 1);
-                    pressed1 = true;
-                }
-
+                checkKeyPress(keyBinds[1]);
             }
-
-            if (Input.GetKeyDown(toPress2) && toPress2 != 0)
+            if (Input.GetKeyDown(keyBinds[2]))
             {
-                if (toPress2 == 0)
-                {
-                    circleColors("miss", 2);
-                }
-                else
-                {
-                    circleColors("hit", 2);
-                    pressed2 = true;
-                }
-
+                checkKeyPress(keyBinds[2]);
+            }
+            if (Input.GetKeyDown(keyBinds[3]))
+            {
+                checkKeyPress(keyBinds[3]);
+            }
+            if (Input.GetKeyDown(keyBinds[4]))
+            {
+                checkKeyPress(keyBinds[4]);
+            }
+            if (Input.GetKeyDown(keyBinds[5]))
+            {
+                checkKeyPress(keyBinds[5]);
             }
         }
         if (!bpm.isTriggerZone)
@@ -238,6 +218,33 @@ public class Beatmap : MonoBehaviour
 
     }
 
+    void checkKeyPress(KeyCode keyPressed) //Kollar ifall knappen tryckt var rätt
+    {
+        if (keyPressed == toPress0)
+        {
+            circleColors("hit", 0);
+            pressed0 = true;
+        }
+        else if (keyPressed == toPress1)
+        {
+            circleColors("hit", 1);
+            pressed1 = true;
+        }
+        else if (keyPressed == toPress2)
+        {
+            circleColors("hit", 2);
+            pressed2 = true;
+        }
+        else
+        {
+            pressed0 = false;
+            pressed1 = false;
+            pressed2 = false;
+            circleColors("miss", 0);
+            circleColors("miss", 1);
+            circleColors("miss", 2);
+        }
+    }
 
     void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
     {
