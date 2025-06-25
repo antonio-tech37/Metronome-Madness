@@ -47,7 +47,14 @@ public class Beatmap : MonoBehaviour
     {
         "0",
         "1",
-        "2"
+        "2",
+        "0",
+        "1",
+        "2",
+        "01",
+        "02",
+        "12",
+        "012"
     };
 
     //Keybinds
@@ -96,7 +103,8 @@ public class Beatmap : MonoBehaviour
     {
         for (int i = 0; i < 512; i++)
         {
-            hitCircles.Add(randiBeatmap[UnityEngine.Random.Range(0,randiBeatmap.Length)]);
+            int weight = UnityEngine.Random.Range(3, randiBeatmap.Length);
+            hitCircles.Add(randiBeatmap[UnityEngine.Random.Range(0,weight)]);
         }
         //
         int beatMapPos = 0;

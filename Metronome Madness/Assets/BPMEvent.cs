@@ -1,23 +1,24 @@
 using UnityEngine;
 using System;
-using NUnit.Framework; // For EventArgs if you use a standard event pattern
+using NUnit.Framework;
 
-[RequireComponent(typeof(AudioSource))] // Ensures there's an AudioSource component on this GameObject
+[RequireComponent(typeof(AudioSource))]
 public class BpmSynchronizer : MonoBehaviour
 {
     public ticker ticker;
-    public float bpm = 120f; // Set this in the Inspector for your specific track
-    public float beatOffset = 20f; // Optional: Adjust if your music has a lead-in before the first beat
+    public float bpm = 120f;
+    public float beatOffset = 20f;
     public int beatsUntilStart;
 
     private AudioSource audioSource;
-    private double nextBeatTime; // Using double for higher precision with dspTime
+    private double nextBeatTime;
 
     private double nextOffBeatTime;
+    private double nextTriggerZone;
+    private double nextTriggerExit;
     private double beatInterval;
     public int currentBeat = 0;
 
-    // Event to notify other scripts that a beat has occurred
     public delegate void OnBeatDelegate(int beatNumber);
     public static event OnBeatDelegate OnBeat;
 
@@ -29,7 +30,6 @@ public class BpmSynchronizer : MonoBehaviour
 
     public double triggerZone = 0.3;
     public bool isTriggerZone = false;
-    private bool isOnBeat = true;
 
     void Awake()
     {
@@ -44,19 +44,20 @@ public class BpmSynchronizer : MonoBehaviour
         nextBeatTime = startTime + beatOffset + (beatInterval * beatsUntilStart);
         ticker.rotationDuration = (float)nextBeatTime - (float)AudioSettings.dspTime;
         nextOffBeatTime = nextBeatTime + (beatInterval / 2f);
+        nextTriggerZone = nextBeatTime - triggerZone;
+        nextTriggerExit = nextTriggerZone + triggerZone;
         currentBeat = 0;
         ticker.isRotating = true;
     }
 
     void Update()
     {
-        if (AudioSettings.dspTime >= nextBeatTime - triggerZone && isTriggerZone == false && isOnBeat == false)
+        if (AudioSettings.dspTime >= nextTriggerZone && isTriggerZone == false)
         {
             //Debug.Log("Entered triggerzone");
             isTriggerZone = true;
         }
-
-        if (AudioSettings.dspTime >= nextBeatTime - beatInterval + triggerZone && isTriggerZone == true && isOnBeat == true)
+        if (AudioSettings.dspTime >= nextTriggerExit && isTriggerZone == true)
         {
             //Debug.Log("Exited triggerzone");
             if (exitTriggerZone != null)
@@ -65,26 +66,23 @@ public class BpmSynchronizer : MonoBehaviour
             }
             isTriggerZone = false;
         }
-
         if (AudioSettings.dspTime >= nextBeatTime)
         {
             
-            Debug.Log("On Beat "+ currentBeat);
+            //Debug.Log("On Beat "+ currentBeat);
 
             if (OnBeat != null) 
             {
                 OnBeat(currentBeat);
             }
 
-
+            
             nextBeatTime += beatInterval;
-            isOnBeat = true;
+            nextTriggerZone = nextBeatTime - triggerZone;
+            //isOnBeat = true;
             currentBeat++;
 
         }
-
-
-
         if (AudioSettings.dspTime >= nextOffBeatTime)
         {
             
@@ -93,7 +91,8 @@ public class BpmSynchronizer : MonoBehaviour
                 OffBeat(currentBeat);
             }
             nextOffBeatTime += beatInterval;
-            isOnBeat = false;
+            nextTriggerExit = nextBeatTime + triggerZone;
+            //isOnBeat = false;
         }
 
     }
