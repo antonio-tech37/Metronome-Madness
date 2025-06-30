@@ -6,17 +6,18 @@ using UnityEngine.InputSystem;
 using System;
 using Unity.VisualScripting;
 using System.Linq;
+using UnityEngine.SocialPlatforms.Impl;
+using Random = UnityEngine.Random;
+using UnityEngine.UI;
 
 public class Beatmap : MonoBehaviour
 {
+    private inputManagerClass playerInputs;
     //INIT settings
     public float BeatmapBpm;
     public int beatsUntilStart;
 
     //Game Objects
-    public GameObject right;
-
-    public GameObject left;
     public GameObject l0;
     public GameObject l1;
     public GameObject l2;
@@ -24,411 +25,260 @@ public class Beatmap : MonoBehaviour
     public GameObject r0;
     public GameObject r1;
     public GameObject r2;
-
     public BpmSynchronizer bpm; //BPM eventen
+    //Bools and ints
+    int score;
 
-    //bools för hitreg
-    bool pressed0;
-    bool pressed1;
-    bool pressed2;
-// Keycodes som byts varje beat, det är dessa som vid varje beat ska tryckas på
-    private KeyCode toPress0;
-    private KeyCode toPress1;
-    private KeyCode toPress2;
-    //Misc vars
-    public int missedCircles = 0;
-    public int scoredCircles = 0;
-    private int previousBeatIndex;
-    bool checkedRound;
+    private int currentBeat = 0;
     //Lists
-    public List<List<KeyCode>> beatmap = new List<List<KeyCode>>(); // En lista som innehåller listor av keycodes som ska tryckas i sucession
-    public List<String> hitCircles = new List<string>(); // En lista vars index innehåller en string av de circles som ska tryckas på, konverteras till char sen till keycode
-    private string[] randiBeatmap = //RNG beatmap
-    {
-        "0",
-        "1",
-        "2",
-        "0",
-        "1",
-        "2",
-        "01",
-        "02",
-        "12",
-        "012"
-    };
+    public List<String> beatmap = new List<string>(); // En lista vars index innehåller en string av de circles som ska tryckas på, konverteras till char sen till keycode
+    private List<string> upcomingCircles = new List<String>();
+    private List<GameObject> futureCircles = new List<GameObject>();
+    private List<string> pressedCircles = new List<string>();
+    private List<String> randiBeatmap = new List<string>(); //RNG beatmap
 
     //Keybinds
-    private KeyCode[] keyBinds =
-    {
-        KeyCode.I,
-        KeyCode.J,
-        KeyCode.N,
-        KeyCode.E,
-        KeyCode.D,
-        KeyCode.C
-    };
-    private KeyCode[] evenKeys =
-    {
-        KeyCode.I,
-        KeyCode.J,
-        KeyCode.N
-    };
 
-    private KeyCode[] oddKeys =
-    {
-        KeyCode.E,
-        KeyCode.D,
-        KeyCode.C
-    };
-    
     void Awake()
     {
+        playerInputs = new inputManagerClass();
         bpm.bpm = BeatmapBpm;
         bpm.beatsUntilStart = beatsUntilStart;
-        BpmSynchronizer.OffBeat += nextCircle;
-        BpmSynchronizer.OnBeat += BeatHandler;
-        BpmSynchronizer.OffBeat += BeatHandler;
-        BpmSynchronizer.OnBeat += upcomingCircle;
-        BpmSynchronizer.exitTriggerZone += countHits;
     }
 
     void Start()
     {
+        playerInputs.Player.Enable();
+        initInputSubscriptions();
         initBeatmap();
-        upcomingCircle(0);
+        BpmSynchronizer.OffBeat += nextCircle;
+        BpmSynchronizer.exitTriggerZone += AccountForHits;
+        BpmSynchronizer.OnBeat += HandleUpcomingCircles;
+    }
+    void initInputSubscriptions()
+    {
+        playerInputs.Player.Circle_L0.performed += HandleInputs;
+        playerInputs.Player.Circle_L1.performed += HandleInputs;
+        playerInputs.Player.Circle_L2.performed += HandleInputs;
+        playerInputs.Player.Circle_R0.performed += HandleInputs;
+        playerInputs.Player.Circle_R1.performed += HandleInputs;
+        playerInputs.Player.Circle_R2.performed += HandleInputs;
+        playerInputs.Player.Circle_L0.canceled += HandleInputs;
+        playerInputs.Player.Circle_L1.canceled += HandleInputs;
+        playerInputs.Player.Circle_L2.canceled += HandleInputs;
+        playerInputs.Player.Circle_R0.canceled += HandleInputs;
+        playerInputs.Player.Circle_R1.canceled += HandleInputs;
+        playerInputs.Player.Circle_R2.canceled += HandleInputs;
     }
 
-//Beatmap init sekvens, initierar beatmap listan
-    void initBeatmap()
+    void initRandiBeatmap()
     {
+        handleWeight(15, "0");
+        handleWeight(15, "1");
+        handleWeight(15, "2");
+        handleWeight(4, "01");
+        handleWeight(4, "02");
+        handleWeight(4, "12");
+        handleWeight(1, "012");
         for (int i = 0; i < 512; i++)
         {
-            int weight = UnityEngine.Random.Range(3, randiBeatmap.Length);
-            hitCircles.Add(randiBeatmap[UnityEngine.Random.Range(0,weight)]);
+            beatmap.Add(randiBeatmap[Random.Range(0, randiBeatmap.Count())]);
         }
-        //
-        int beatMapPos = 0;
-        foreach (string circle in hitCircles)
+    }
+    void handleWeight(int weight, string circle)
+    {
+        for (int i = 0; i < weight; i++)
         {
-            List<KeyCode> keyCodes = new List<KeyCode>();
-            foreach (char key in circle)
+            randiBeatmap.Add(circle);
+        }
+    }
+
+    void initBeatmap()
+    {
+        initRandiBeatmap();
+
+        int iterator = 0;
+        foreach (string entry in beatmap.ToList())
+        {
+            if (iterator % 2 == 0 || iterator == 0)
             {
-                KeyCode decodedKey = decodeKeyCode(key, beatMapPos);
-                keyCodes.Add(decodedKey);
+            if (entry == null)
+            {
+                iterator++;
+                continue;
             }
-            beatmap.Add(keyCodes);
-            beatMapPos++;
+                string newString = "";
+                foreach (char circle in entry)
+                {
+                    int intCircle = circle - '0';
+                    intCircle += 3;
+                    newString += intCircle.ToString();
+                }
+                beatmap[iterator] = newString;
+            }
+
+            iterator++;
         }
     }
 
-
-    KeyCode decodeKeyCode(char key, int pos)
+    void HandleInputs(InputAction.CallbackContext context)
     {
-        int index = key - '0'; //Gör om char(ascii/unicode) till int för indexing
-
-        if (pos % 2 == 0 || pos == 0)
+        string input = context.action.name;
+        if (context.performed)
         {
-            return evenKeys[index];
+            countHits(context);
+            //Debug.Log("You pressed me! " + input);
+        }
+    }
+    void nextCircle(int beat)
+    {
+        if (beat <= 0)
+        {
+            beat = 0;
         }
         else
         {
-            return oddKeys[index];
+            beat -= 1;
+        }
+        if (beat >= beatmap.Count()) return;
+
+        upcomingCircles.Clear();
+        if (beatmap[beat] != null)
+        {            
+            foreach (char circle in beatmap[beat])
+            {
+                int intCircle = circle - '0';
+                string circleToAdd = MatchIntToString(intCircle);
+                upcomingCircles.Add(circleToAdd);
+            }
         }
     }
 
-    List<KeyCode> toPressKeys = new List<KeyCode>();
-
-    void nextCircle(int beat) //Hanterar nästa set av keybindings som ska tryckas på // int beat är vilken takt vi är på
+    void countHits(InputAction.CallbackContext context)
     {
-        beat -= 1; //-1 eftersom den kickar igång efter första slaget, aka vid beat 1 så ska man trycka på entry 0.
-        if (beat >= beatmap.Count) return; //Betyder att mappen är slut
-        //Nollställ keycodes
-        toPress0 = 0;
-        toPress1 = 0;
-        toPress2 = 0;
-        //Initera från listan
-        toPress0 = findKeycodes(0, beat);
-        toPress1 = findKeycodes(1, beat);
-        toPress2 = findKeycodes(2, beat);
-
-        toPressKeys.Clear();
-        toPressKeys.Add(toPress0);
-        toPressKeys.Add(toPress1);
-        toPressKeys.Add(toPress2);
-
-        //Loggar även beatet
-        previousBeatIndex = beat;
-    }
-    KeyCode findKeycodes(int key, int beat)
-    {
-        if (key > beatmap[beat].Count - 1)
-        {
-            return KeyCode.None;
-        }
-        KeyCode currentBeat = beatmap[beat][key];
-        return currentBeat;
-    }
-
-
-    bool isEvenBeat;
-
-    void BeatHandler(int beat) //Viktigt för att se ifall actionen ska ske på vänster eller höger sida
-    {
-        if (beat % 2 != 0)
-        {
-            isEvenBeat = true;
-        }
-        else
-        {
-            isEvenBeat = false;
-        }
-    }
-
-    void Update()
-    {
+        //checkForSlider(context, true);
+        if (!upcomingCircles.Any()) return;
         if (bpm.isTriggerZone)
         {
-            checkedRound = false;
-            if (Input.GetKeyDown(keyBinds[0]))
+            foreach (string key in upcomingCircles)
             {
-                checkKeyPress(keyBinds[0]);
-            }
-            if (Input.GetKeyDown(keyBinds[1]))
-            {
-                checkKeyPress(keyBinds[1]);
-            }
-            if (Input.GetKeyDown(keyBinds[2]))
-            {
-                checkKeyPress(keyBinds[2]);
-            }
-            if (Input.GetKeyDown(keyBinds[3]))
-            {
-                checkKeyPress(keyBinds[3]);
-            }
-            if (Input.GetKeyDown(keyBinds[4]))
-            {
-                checkKeyPress(keyBinds[4]);
-            }
-            if (Input.GetKeyDown(keyBinds[5]))
-            {
-                checkKeyPress(keyBinds[5]);
+                if (key == null) return;
+                if (key == context.action.name)
+                {
+                    pressedCircles.Add(context.action.name);
+                    ScoreHits(context.action.name, "hit");
+                }
             }
         }
-        if (!bpm.isTriggerZone)
+        else if (!bpm.isTriggerZone)
         {
-            if (Input.anyKeyDown)
-            {
-                circleColors("miss", 0);
-                circleColors("miss", 1);
-                circleColors("miss", 2);
-            }
-        }
-
-    }
-
-    void checkKeyPress(KeyCode keyPressed) //Kollar ifall knappen tryckt var rätt
-    {
-        if (keyPressed == toPress0)
-        {
-            circleColors("hit", 0);
-            pressed0 = true;
-        }
-        else if (keyPressed == toPress1)
-        {
-            circleColors("hit", 1);
-            pressed1 = true;
-        }
-        else if (keyPressed == toPress2)
-        {
-            circleColors("hit", 2);
-            pressed2 = true;
-        }
-        else
-        {
-            pressed0 = false;
-            pressed1 = false;
-            pressed2 = false;
-            circleColors("miss", 0);
-            circleColors("miss", 1);
-            circleColors("miss", 2);
+            ScoreHits(context.action.name, "miss");
         }
     }
 
-    void countHits(string hitormiss) //Efter ett slag kollar den ifall beatet blev träffat, detta är för att förhoppningsvis avlasta runtime
+    void AccountForHits(int beat)
     {
-        //Debug.Log(pressed0 + " " + pressed1 + " " + pressed2);
-
-        if (checkedRound == false)
+        if (!upcomingCircles.Any()) return;
+        foreach (string circle in upcomingCircles)
         {
-            if (pressed0)
+            bool isNotPressed = true;
+            foreach (string hitCircle in pressedCircles)
             {
-                scoredCircles += 1;
-                Debug.Log("You hit : " + toPress0);
-            }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 1)
+                if (circle == hitCircle)
                 {
-                    missedCircles += 1;
-                    circleColors("miss", 0);
+                    isNotPressed = false;
                 }
-                
-                //Debug.Log("You missed : " + toPress0 + " :(");
             }
-
-            if (pressed1)
+            if (isNotPressed)
             {
-                scoredCircles += 1;
-                Debug.Log("You hit : " + toPress1);
+                ScoreHits(circle, "miss");
             }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 2)
-                {
-                    missedCircles += 1;
-                    circleColors("miss", 1);
-                }
-                
-                //Debug.Log("You missed : " + toPress1 + " :(");
-            }
-
-            if (pressed2)
-            {
-                scoredCircles += 1;
-                Debug.Log("You hit : " + toPress1);
-            }
-            else
-            {
-                if (hitCircles[previousBeatIndex].Length >= 3)
-                {
-                    missedCircles += 1;
-                    circleColors("miss", 2);
-                }
-                
-                //Debug.Log("You missed : " + toPress1 + " :(");
-            }
-            pressed0 = false;
-            pressed1 = false;
-            pressed2 = false;
-            checkedRound = true;
         }
+        pressedCircles.Clear();
     }
 
-    //Hanterar graphics för de circlar som ska tryckas på härnäst
-    List<int> upcomingCircles = new List<int>();
-    void upcomingCircle(int beat)
+    void ScoreHits(string input, string hitormiss)
     {
-        if (beat >= hitCircles.Count())
-        {
-            beat = hitCircles.Count() - 1;
-        }
-        upcomingCircles.Clear();
-        foreach (char circle in hitCircles[beat])
-        {
-            int add = circle - '0';
-            upcomingCircles.Add(add);
-        }
-        foreach (int index in upcomingCircles)
-        {
-            if (!isEvenBeat)
-            {
-                switch (index)
-                {
-                    case 0:
-                        r0.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                    case 1:
-                        r1.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                    case 2:
-                        r2.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                }
-            }
-            else
-            {
-                switch (index)
-                {
-                    case 0:
-                        l0.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                    case 1:
-                        l1.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                    case 2:
-                        l2.GetComponent<SpriteRenderer>().color = Color.blue;
-                        break;
-                }                
-            }
-        } 
-    }
-
-    List<SpriteRenderer> circleToLight = new List<SpriteRenderer>();
-
-    void circleColors(string hitormiss, int circle) //hanterar endast färger för debugging
-    {
-        //Debug.Log(hitCircles[previousBeatIndex]);
-        Debug.Log(hitormiss + " " + circle);
-        GameObject activeObject0;
-        GameObject activeObject1;
-        GameObject activeObject2;
-
-        if (isEvenBeat)
-        {
-            activeObject0 = r0;
-            activeObject1 = r1;
-            activeObject2 = r2;
-        }
-        else
-        {
-            activeObject0 = l0;
-            activeObject1 = l1;
-            activeObject2 = l2;
-        }
-
-
-        circleToLight.Clear();
-        if (hitCircles[previousBeatIndex].Contains("0"))
-        {
-            circleToLight.Add(activeObject0.GetComponent<SpriteRenderer>());    
-        }
-        if (hitCircles[previousBeatIndex].Contains("1"))
-        {
-            circleToLight.Add(activeObject1.GetComponent<SpriteRenderer>());
-        }
-        if (hitCircles[previousBeatIndex].Contains("2"))
-        {
-            circleToLight.Add(activeObject2.GetComponent<SpriteRenderer>());
-        }
-
-        Color colorWith = Color.blue;
-
         if (hitormiss == "hit")
         {
-            colorWith = Color.green;
+            ColorCircleHit(hitormiss, input);
+            score += 50;
         }
         else if (hitormiss == "miss")
         {
-            colorWith = Color.red;
-        }
-        int iterator = 0;
-        foreach (SpriteRenderer hitCircle in circleToLight)
-        {
-            if (circle == iterator)
-            {
-                SpriteRenderer currentCircle = hitCircle;
-                currentCircle.color = colorWith;
-                StartCoroutine(Wait(currentCircle));
-            }
-            //Debug.Log(hitCircle);
-            iterator++;
-
+            ColorCircleHit(hitormiss, input);
+            score -= 50;
         }
     }
 
-    IEnumerator Wait(SpriteRenderer circle) //Behöver verkligen ett niceigare alternativ för en sleep
+    void HandleUpcomingCircles(int beat)
     {
-        yield return new WaitForSeconds(0.2f);
-        circle.color = Color.white;
+        currentBeat = beat;
+        futureCircles.Clear();
+        if (beat >= beatmap.Count()) return;
+        if (beatmap[beat] == null) return;
+        foreach (char circle in beatmap[beat])
+        {
+            int intCircle = circle - '0';
+            string stringCircle = MatchIntToString(intCircle);
+            GameObject GOCircle = MatchStringToGameObject(stringCircle);
+            futureCircles.Add(GOCircle);
+        }
+        foreach (GameObject circle in futureCircles)
+        {
+            ColorUpcomingCircles(circle);
+        }
+    }
+
+    void ColorCircleHit(string hitormiss, string input)
+    {
+        GameObject circleToColor = MatchStringToGameObject(input);
+        circleScript circleScript = circleToColor.GetComponent<circleScript>();
+        circleScript.Hit(hitormiss);
+    }
+    void ColorUpcomingCircles(GameObject circle)
+    {
+        circleScript circleScript = circle.GetComponent<circleScript>();
+        circleScript.LightUp();
+    }
+
+    GameObject MatchStringToGameObject(string input)
+    {
+        switch (input)
+        {
+            case "Circle_L0":
+                return l0;
+            case "Circle_L1":
+                return l1;
+            case "Circle_L2":
+                return l2;
+            case "Circle_R0":
+                return r0;
+            case "Circle_R1":
+                return r1;
+            case "Circle_R2":
+                return r2;
+        }
+        return null;
+    }
+    string MatchIntToString(int input)
+    {
+        switch (input)
+        {
+            case 0:
+                return "Circle_L0";
+            case 1:
+                return "Circle_L1";
+            case 2:
+                return "Circle_L2";
+            case 3:
+                return "Circle_R0";
+            case 4:
+                return "Circle_R1";
+            case 5:
+                return "Circle_R2";
+        }
+        return null;
     }
 }
+

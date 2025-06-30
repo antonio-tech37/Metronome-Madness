@@ -25,7 +25,7 @@ public class BpmSynchronizer : MonoBehaviour
     public delegate void OffBeatDelegate(int beatNumber);
     public static event OffBeatDelegate OffBeat;
 
-    public delegate void exitTriggerZoneDelegate(string argument);
+    public delegate void exitTriggerZoneDelegate(int beatNumber);
     public static event exitTriggerZoneDelegate exitTriggerZone;
 
     public double triggerZone = 0.3;
@@ -62,7 +62,7 @@ public class BpmSynchronizer : MonoBehaviour
             //Debug.Log("Exited triggerzone");
             if (exitTriggerZone != null)
             {
-                exitTriggerZone("init");
+                exitTriggerZone(currentBeat);
             }
             isTriggerZone = false;
         }
@@ -76,7 +76,6 @@ public class BpmSynchronizer : MonoBehaviour
                 OnBeat(currentBeat);
             }
 
-            
             nextBeatTime += beatInterval;
             nextTriggerZone = nextBeatTime - triggerZone;
             //isOnBeat = true;
