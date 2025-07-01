@@ -258,7 +258,27 @@ MonoBehaviour:
   r1: {fileID: 1929761761}
   r2: {fileID: 1937436100}
   bpm: {fileID: 1669132304}
-  beatmap: []
+  beatmapCircles:
+  - 0
+  - 1
+  - 2
+  - 1
+  - 0
+  - 1
+  - 2
+  - 1
+  beatmapSliders:
+  - 0
+  - 
+  - 1
+  - 
+  - 1
+  - 
+  - 0
+  - 
+  upcomingCircles: []
+  upcomingSliders: []
+  circles: []
   sliders: []
 --- !u!4 &481282429
 Transform:

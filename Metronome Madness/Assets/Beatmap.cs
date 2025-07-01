@@ -31,11 +31,14 @@ public class Beatmap : MonoBehaviour
 
     private int currentBeat = 0;
     //Lists
-    public List<String> beatmap = new List<string>(); // En lista vars index innehåller en string av de circles som ska tryckas på, konverteras till char sen till keycode
-    private List<string> upcomingCircles = new List<String>();
+    public List<List<List<string>>> beatmap = new List<List<List<string>>>(); // En lista vars index innehåller en string av de circles som ska tryckas på, konverteras till char sen till keycode
+    public List<string> beatmapCircles = new List<string>();
+    public List<string> beatmapSliders = new List<string>();
+    public List<string> upcomingCircles = new List<string>();
     private List<GameObject> futureCircles = new List<GameObject>();
+    public List<string> upcomingSliders = new List<string>();
     private List<string> pressedCircles = new List<string>();
-    private List<String> randiBeatmap = new List<string>(); //RNG beatmap
+    private List<string> randiBeatmap = new List<string>(); //RNG beatmap
 
     //Keybinds
 
@@ -51,8 +54,9 @@ public class Beatmap : MonoBehaviour
         playerInputs.Player.Enable();
         initInputSubscriptions();
         initBeatmap();
-        BpmSynchronizer.OffBeat += nextCircle;
+        BpmSynchronizer.OffBeat += NextSequence;
         BpmSynchronizer.exitTriggerZone += AccountForHits;
+        BpmSynchronizer.exitTriggerZone += CountSliders;
         BpmSynchronizer.OnBeat += HandleUpcomingCircles;
     }
     void initInputSubscriptions()
@@ -82,7 +86,7 @@ public class Beatmap : MonoBehaviour
         handleWeight(1, "012");
         for (int i = 0; i < 512; i++)
         {
-            beatmap.Add(randiBeatmap[Random.Range(0, randiBeatmap.Count())]);
+            beatmapCircles.Add(randiBeatmap[Random.Range(0, randiBeatmap.Count())]);
         }
     }
     void handleWeight(int weight, string circle)
@@ -92,33 +96,63 @@ public class Beatmap : MonoBehaviour
             randiBeatmap.Add(circle);
         }
     }
+    public List<String> circles = new List<string>();
+    public List<String> sliders = new List<string>();
 
-    void initBeatmap()
+    void CompileBeatmap()
     {
-        initRandiBeatmap();
-
-        int iterator = 0;
-        foreach (string entry in beatmap.ToList())
+        for (int i = 0; i < beatmapCircles.Count(); i++)
         {
-            if (iterator % 2 == 0 || iterator == 0)
+            if (i % 2 == 0 || i == 0)
             {
-            if (entry == null)
-            {
-                iterator++;
-                continue;
-            }
-                string newString = "";
-                foreach (char circle in entry)
+                string stringToAdd = "";
+                foreach (char circle in beatmapCircles[i])
                 {
                     int intCircle = circle - '0';
                     intCircle += 3;
-                    newString += intCircle.ToString();
+                    stringToAdd += intCircle;
                 }
-                beatmap[iterator] = newString;
+                beatmapCircles[i] = stringToAdd;
             }
-
-            iterator++;
+            List<List<string>> beat = new List<List<string>>();
+            List<string> circles = new List<string>();
+            circles.Add(beatmapCircles[i]);
+            beat.Add(circles);
+            beatmap.Add(beat);
         }
+        for (int i = 0; i < beatmapSliders.Count(); i++)
+        {
+            if (i % 2 == 0 || i == 0)
+            {
+                if (beatmapSliders[i] != null)
+                {
+                    beatmap[i][0][0] = null;
+                }
+                string stringToAdd = "";
+                foreach (char slider in beatmapSliders[i])
+                {
+                    int intSlider = slider - '0';
+                    intSlider += 3;
+                    stringToAdd += intSlider;
+                }
+                beatmapSliders[i] = stringToAdd;
+            }
+            List<string> sliders = new List<string>();
+            sliders.Add(beatmapSliders[i]);
+            beatmap[i].Add(sliders);
+        }
+    }
+
+    void initBeatmap()
+    {
+        //initRandiBeatmap();
+        CompileBeatmap();
+        for (int i = 0; i < beatmap.Count(); i++)
+        {
+            circles.Add(beatmap[i][0][0]);
+            sliders.Add(beatmap[i][1][0]);
+            //sliders.Add(beatmap[i][1][0]);
+        }   
     }
 
     void HandleInputs(InputAction.CallbackContext context)
@@ -126,74 +160,177 @@ public class Beatmap : MonoBehaviour
         string input = context.action.name;
         if (context.performed)
         {
-            countHits(context);
+            StartSliders(context);
+            CountHits(context);
             //Debug.Log("You pressed me! " + input);
         }
-    }
-    void nextCircle(int beat)
-    {
-        if (beat <= 0)
+        if (context.canceled)
         {
-            beat = 0;
+            FinishSlider(context);
         }
-        else
+    }
+
+    void NextSequence(int beat)
+    {
+        if (beat != 0)
         {
             beat -= 1;
         }
         if (beat >= beatmap.Count()) return;
 
         upcomingCircles.Clear();
-        if (beatmap[beat] != null)
-        {            
-            foreach (char circle in beatmap[beat])
+        upcomingSliders.Clear();
+        if (circles[beat] != null)
+        {
+            foreach (char circle in circles[beat])
             {
                 int intCircle = circle - '0';
                 string circleToAdd = MatchIntToString(intCircle);
                 upcomingCircles.Add(circleToAdd);
             }
         }
-    }
-
-    void countHits(InputAction.CallbackContext context)
-    {
-        //checkForSlider(context, true);
-        if (!upcomingCircles.Any()) return;
-        if (bpm.isTriggerZone)
-        {
-            foreach (string key in upcomingCircles)
+        if (sliders[beat] != null)
+        {    
+            foreach (char slider in sliders[beat])
             {
-                if (key == null) return;
-                if (key == context.action.name)
-                {
-                    pressedCircles.Add(context.action.name);
-                    ScoreHits(context.action.name, "hit");
-                }
+                int intSlider = slider - '0';
+                string sliderToAdd = MatchIntToString(intSlider);
+                upcomingSliders.Add(sliderToAdd);
             }
         }
-        else if (!bpm.isTriggerZone)
+    }
+
+    List<string[]> currentSliders = new List<string[]>();
+
+    void StartSliders(InputAction.CallbackContext context)
+    {
+        if (!upcomingSliders.Any()) return;
+        if (bpm.isTriggerZone)
         {
-            ScoreHits(context.action.name, "miss");
+            if (upcomingSliders.Contains(context.action.name))
+            {
+                Debug.Log("Slider started!");
+                string[] slider = { context.action.name, "2" };
+                currentSliders.Add(slider);
+            }
+        }
+    }
+
+    void CountSliders(int beat)
+    {
+        if (!currentSliders.Any()) return;
+        for (int i = 0; i < currentSliders.Count(); i++)
+        {
+            Debug.Log("Slider counted!");
+            int health = currentSliders[i][1][0] - '0';
+            health -= 1;
+            if (health <= 0)
+            {
+                SliderBreak();
+                HandleSliderRemove(i);
+                i = -1;
+                continue;
+            }
+            currentSliders[i][1] = health.ToString();
+        }
+    }
+
+    void HandleSliderRemove(int index)
+    {
+        //Lägg till så att man dör även eller ah du fattar
+        currentSliders.RemoveAt(index);
+    }
+
+    void SliderBreak()
+    {
+        Debug.Log("You never pressed it??? ):");
+    }
+
+    void FinishSlider(InputAction.CallbackContext context)
+    {
+        if (!currentSliders.Any()) return;
+        for (int i = 0; i < currentSliders.Count(); i++)
+        {
+            if (context.action.name == currentSliders[i][0])
+            {
+                if (currentSliders[i][1] == "1" && bpm.isTriggerZone)
+                {
+                    Debug.Log("Hit Slider!");
+                }
+                else
+                {
+                    Debug.Log("Too early ):");
+                }
+                HandleSliderRemove(i);
+                return;
+            }
+        }
+    }
+
+    void CountHits(InputAction.CallbackContext context)
+    {
+        
+        pressedCircles.Add(context.action.name);
+        if (upcomingCircles.Any())
+        {
+            if (bpm.isTriggerZone)
+            {
+                foreach (string key in upcomingCircles)
+                {
+                    if (key == null) return;
+                    if (key == context.action.name)
+                    {
+                        ScoreHits(context.action.name, "hit");
+                    }
+                }
+            }
+            else if (!bpm.isTriggerZone)
+            {
+                ScoreHits(context.action.name, "miss");
+            }   
         }
     }
 
     void AccountForHits(int beat)
     {
-        if (!upcomingCircles.Any()) return;
-        foreach (string circle in upcomingCircles)
+        if (upcomingCircles.Any())
         {
-            bool isNotPressed = true;
-            foreach (string hitCircle in pressedCircles)
-            {
-                if (circle == hitCircle)
+            foreach (string circle in upcomingCircles)
                 {
-                    isNotPressed = false;
+                    bool isNotPressed = true;
+                    foreach (string hitCircle in pressedCircles)
+                    {
+                        if (circle == hitCircle)
+                        {
+                            isNotPressed = false;
+                        }
+                    }
+                    if (isNotPressed)
+                    {
+                        ScoreHits(circle, "miss");
+                    }
+                }
+        }
+
+        if (upcomingSliders.Any())
+        {    
+            foreach (string circle in upcomingSliders)
+            {
+                bool isNotPressed = true;
+                foreach (string hitCircle in pressedCircles)
+                {
+                    if (circle == hitCircle)
+                    {
+                        isNotPressed = false;
+                    }
+                }
+                if (isNotPressed)
+                {
+                    Debug.Log("You didnt even try to press me dude...");
                 }
             }
-            if (isNotPressed)
-            {
-                ScoreHits(circle, "miss");
-            }
         }
+
         pressedCircles.Clear();
     }
 
@@ -215,9 +352,9 @@ public class Beatmap : MonoBehaviour
     {
         currentBeat = beat;
         futureCircles.Clear();
-        if (beat >= beatmap.Count()) return;
-        if (beatmap[beat] == null) return;
-        foreach (char circle in beatmap[beat])
+        if (beat >= circles.Count()) return;
+        if (circles[beat] == null) return;
+        foreach (char circle in circles[beat])
         {
             int intCircle = circle - '0';
             string stringCircle = MatchIntToString(intCircle);
