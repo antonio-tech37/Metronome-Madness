@@ -38,7 +38,7 @@ public class Beatmap : MonoBehaviour
     private List<GameObject> futureCircles = new List<GameObject>();
     public List<string> upcomingSliders = new List<string>();
     private List<string> pressedCircles = new List<string>();
-    private List<string> randiBeatmap = new List<string>(); //RNG beatmap
+    public List<string> randiBeatmap = new List<string>(); //RNG beatmap
 
     //Keybinds
 
@@ -145,12 +145,18 @@ public class Beatmap : MonoBehaviour
 
     void initBeatmap()
     {
-        //initRandiBeatmap();
+        initRandiBeatmap();
         CompileBeatmap();
         for (int i = 0; i < beatmap.Count(); i++)
         {
-            circles.Add(beatmap[i][0][0]);
-            sliders.Add(beatmap[i][1][0]);
+            if (beatmap[i].Count >= 1)
+            {
+                circles.Add(beatmap[i][0][0]);
+            }
+            if (beatmap[i].Count >= 2)
+            {
+                sliders.Add(beatmap[i][1][0]);
+            }
             //sliders.Add(beatmap[i][1][0]);
         }   
     }
@@ -180,7 +186,7 @@ public class Beatmap : MonoBehaviour
 
         upcomingCircles.Clear();
         upcomingSliders.Clear();
-        if (circles[beat] != null)
+        if (circles[beat] != null && beat <= circles.Count)
         {
             foreach (char circle in circles[beat])
             {
@@ -189,8 +195,9 @@ public class Beatmap : MonoBehaviour
                 upcomingCircles.Add(circleToAdd);
             }
         }
+        if (beat >= sliders.Count) return;
         if (sliders[beat] != null)
-        {    
+        {
             foreach (char slider in sliders[beat])
             {
                 int intSlider = slider - '0';
