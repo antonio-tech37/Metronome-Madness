@@ -16,6 +16,9 @@ public class lineDrawer : MonoBehaviour
     float resolution = 50;
     bool deleteLine = false;
     float difference = 10;
+    float timeIncrement;
+    float drawTime = 0.2f;
+
 
     bool drawLine = false;
     void Start()
@@ -36,10 +39,11 @@ public class lineDrawer : MonoBehaviour
 
     void InitLine()
     {
+        timeIncrement = drawTime / resolution;
         posx = startPosX;
         lineIndex = 0;
         line.positionCount = 0;
-        timeUntilDraw = Time.time + 0.1f;
+        timeUntilDraw = Time.time + timeIncrement;
     }
 
     public void DrawLine(Vector3 pos)
@@ -71,7 +75,7 @@ public class lineDrawer : MonoBehaviour
         {
             if (Time.time >= timeUntilDraw && line.positionCount <= resolution && deleteLine == false)
             {
-                timeUntilDraw += 0.01f;
+                timeUntilDraw += timeIncrement;
                 line.positionCount += 1;
                 double posy = (-1/difference * (posx - startPosX) * (posx + startPosX))+startPosY;
                 Vector3 newPos = new Vector3(posx, (float)posy, 0.0f);
@@ -86,7 +90,7 @@ public class lineDrawer : MonoBehaviour
             // }
             if (Time.time >= timeUntilDraw && line.positionCount != 0 && deleteLine == true)
             {
-                timeUntilDraw += 0.01f;
+                timeUntilDraw += timeIncrement;
                 for (int i = 0; i < line.positionCount; i++)
                 {
                     if (i + 1 >= line.positionCount) continue;
@@ -99,7 +103,7 @@ public class lineDrawer : MonoBehaviour
             {
                 drawLine = false;
                 deleteLine = false;
-                timeUntilDraw += 0.01f;
+                timeUntilDraw += timeIncrement;
                 posx = -5;
                 lineIndex = 0;
             }
