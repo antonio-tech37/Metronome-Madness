@@ -1,28 +1,27 @@
+using System;
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class testLine : MonoBehaviour
+public class lineDrawer : MonoBehaviour
 {
-    private inputManagerClass playerInputs;
     LineRenderer line;
     float timeUntilDraw;
     int lineIndex = 0;
-    float posx = -5;
+    float posx;
+    float startPosX;
+    float startPosY;
     float segmentSize;
     float resolution = 50;
     bool deleteLine = false;
+    float difference = 10;
 
     bool drawLine = false;
     void Start()
     {
-        playerInputs = new inputManagerClass();
-        playerInputs.Player.Enable();
-        segmentSize = 10 / resolution;
         timeUntilDraw = Time.time + 0.1f;
         line = GetComponent<LineRenderer>();
-        playerInputs.Player.Circle_L0.performed += DrawLine;
         // int posx = -5;
         // for (int i = 0; i < 11; i++)
         // {
@@ -37,20 +36,32 @@ public class testLine : MonoBehaviour
 
     void InitLine()
     {
-        posx = -5;
+        posx = startPosX;
         lineIndex = 0;
         line.positionCount = 0;
         timeUntilDraw = Time.time + 0.1f;
     }
 
-    void DrawLine(InputAction.CallbackContext context)
+    public void DrawLine(Vector3 pos)
     {
-        if (context.performed)
+        startPosX = pos.x;
+        startPosY = pos.y;
+        difference = Math.Abs(pos.x - (-pos.x));
+        segmentSize = difference / resolution;
+        if (pos.x > 0)
         {
-            InitLine();
-            Debug.Log("Pressed");
-            drawLine = true;
+            segmentSize = -segmentSize;
         }
+
+        InitLine();
+        Debug.Log("Pressed");
+        drawLine = true;
+    }
+
+    public void DeleteLine()
+    {
+        timeUntilDraw = Time.time + 0.1f;
+        deleteLine = true;
     }
 
     // Update is called once per frame
@@ -62,17 +73,17 @@ public class testLine : MonoBehaviour
             {
                 timeUntilDraw += 0.01f;
                 line.positionCount += 1;
-                double posy = -0.1 * (posx - 5) * (posx + 5);
+                double posy = (-1/difference * (posx - startPosX) * (posx + startPosX))+startPosY;
                 Vector3 newPos = new Vector3(posx, (float)posy, 0.0f);
                 line.SetPosition(lineIndex, newPos);
                 posx += segmentSize;
                 lineIndex += 1;
 
             }
-            if (Time.time >= timeUntilDraw && line.positionCount > resolution && deleteLine == false)
-            {
-                deleteLine = true;
-            }
+            // if (Time.time >= timeUntilDraw && line.positionCount > resolution && deleteLine == false)
+            // {
+            //     deleteLine = true;
+            // }
             if (Time.time >= timeUntilDraw && line.positionCount != 0 && deleteLine == true)
             {
                 timeUntilDraw += 0.01f;

@@ -37,6 +37,7 @@ public class Beatmap : MonoBehaviour
     public List<string> upcomingCircles = new List<string>();
     private List<GameObject> futureCircles = new List<GameObject>();
     public List<string> upcomingSliders = new List<string>();
+    private List<GameObject> futureSliders = new List<GameObject>();
     private List<string> pressedCircles = new List<string>();
     public List<string> randiBeatmap = new List<string>(); //RNG beatmap
 
@@ -145,7 +146,7 @@ public class Beatmap : MonoBehaviour
 
     void initBeatmap()
     {
-        initRandiBeatmap();
+        //initRandiBeatmap();
         CompileBeatmap();
         for (int i = 0; i < beatmap.Count(); i++)
         {
@@ -203,6 +204,7 @@ public class Beatmap : MonoBehaviour
                 int intSlider = slider - '0';
                 string sliderToAdd = MatchIntToString(intSlider);
                 upcomingSliders.Add(sliderToAdd);
+                HandleUpcomingSliders(currentBeat);
             }
         }
     }
@@ -245,6 +247,7 @@ public class Beatmap : MonoBehaviour
     void HandleSliderRemove(int index)
     {
         //Lägg till så att man dör även eller ah du fattar
+        RemoveSliders(currentSliders[index][0]);
         currentSliders.RemoveAt(index);
     }
 
@@ -324,21 +327,28 @@ public class Beatmap : MonoBehaviour
             foreach (string circle in upcomingSliders)
             {
                 bool isNotPressed = true;
-                foreach (string hitCircle in pressedCircles)
+                foreach (string hitSlider in pressedCircles)
                 {
-                    if (circle == hitCircle)
+                    if (circle == hitSlider)
                     {
                         isNotPressed = false;
                     }
                 }
                 if (isNotPressed)
                 {
+                    RemoveSliders(circle);
                     Debug.Log("You didnt even try to press me dude...");
                 }
             }
         }
 
         pressedCircles.Clear();
+    }
+
+    void RemoveSliders(string circle)
+    {
+        GameObject slider = MatchStringToGameObject(circle);
+        slider.GetComponent<circleScript>().Slider();
     }
 
     void ScoreHits(string input, string hitormiss)
@@ -355,23 +365,66 @@ public class Beatmap : MonoBehaviour
         }
     }
 
+    void HandleUpcomingSliders(int beat)
+    {
+        futureSliders.Clear();
+        if (beat >= sliders.Count()) return;
+        if (sliders[beat] == null) return;
+        foreach (char slider in sliders[beat])
+        {
+            int intSlider = slider - '0';
+            string stringSlider = MatchIntToString(intSlider);
+            GameObject GOSlider = MatchStringToGameObject(stringSlider);
+            futureSliders.Add(GOSlider);
+        }
+        foreach (GameObject slider in futureSliders)
+        {
+            slider.GetComponent<circleScript>().Slider();
+        }
+    }
+
     void HandleUpcomingCircles(int beat)
     {
         currentBeat = beat;
         futureCircles.Clear();
-        if (beat >= circles.Count()) return;
-        if (circles[beat] == null) return;
-        foreach (char circle in circles[beat])
+        if (beat >= beatmap.Count()) return;
+        if (circles[beat] != null)
         {
-            int intCircle = circle - '0';
-            string stringCircle = MatchIntToString(intCircle);
-            GameObject GOCircle = MatchStringToGameObject(stringCircle);
-            futureCircles.Add(GOCircle);
+            foreach (char circle in circles[beat])
+            {
+                int intCircle = circle - '0';
+                string stringCircle = MatchIntToString(intCircle);
+                GameObject GOCircle = MatchStringToGameObject(stringCircle);
+                futureCircles.Add(GOCircle);
+            }
+        }
+        if (sliders[beat] != null)
+        {    
+            foreach (char slider in sliders[beat])
+            {
+                int intCircle = slider - '0';
+                string stringCircle = MatchIntToString(intCircle);
+                GameObject GOCircle = MatchStringToGameObject(stringCircle);
+                futureCircles.Add(GOCircle);
+            }
         }
         foreach (GameObject circle in futureCircles)
         {
             ColorUpcomingCircles(circle);
         }
+    }
+
+    // void testSlider()
+    // {
+    //     circleScript circleScript1 = r1.GetComponent<circleScript>();
+    //     circleScript circleScript2 = l0.GetComponent<circleScript>();
+    //     circleScript1.Slider();
+    //     circleScript2.Slider();
+    // }
+
+    void DrawUpcomingSlider()
+    {
+        
     }
 
     void ColorCircleHit(string hitormiss, string input)
