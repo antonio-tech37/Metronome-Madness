@@ -16,7 +16,7 @@ public class BpmSynchronizer : MonoBehaviour
     private double nextOffBeatTime;
     private double nextTriggerZone;
     private double nextTriggerExit;
-    private double beatInterval;
+    public double beatInterval;
     public int currentBeat = 0;
 
     public delegate void OnBeatDelegate(int beatNumber);

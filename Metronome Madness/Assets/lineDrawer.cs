@@ -37,6 +37,7 @@ public class lineDrawer : MonoBehaviour
         // }
     }
 
+    int a = 1;
     void InitLine()
     {
         timeIncrement = drawTime / resolution;
@@ -44,10 +45,13 @@ public class lineDrawer : MonoBehaviour
         lineIndex = 0;
         line.positionCount = 0;
         timeUntilDraw = Time.time + timeIncrement;
+        Debug.Log("Initiated " + a + " sliders");
+        a += 1;
     }
 
     public void DrawLine(Vector3 pos)
     {
+        drawLine = false;
         startPosX = pos.x;
         startPosY = pos.y;
         difference = Math.Abs(pos.x - (-pos.x));
@@ -64,7 +68,7 @@ public class lineDrawer : MonoBehaviour
 
     public void DeleteLine()
     {
-        timeUntilDraw = Time.time + 0.1f;
+        timeUntilDraw = Time.time + timeIncrement;
         deleteLine = true;
     }
 
@@ -103,9 +107,6 @@ public class lineDrawer : MonoBehaviour
             {
                 drawLine = false;
                 deleteLine = false;
-                timeUntilDraw += timeIncrement;
-                posx = -5;
-                lineIndex = 0;
             }
         }
     }

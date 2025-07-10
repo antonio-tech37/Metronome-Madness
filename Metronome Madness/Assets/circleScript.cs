@@ -1,13 +1,15 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
+using UnityEngine.UI;
 
 public class circleScript : MonoBehaviour
 {
     public GameObject slider;
     SpriteRenderer sprite;
     bool isSlider = false;
-
+    public Image background;    
     void Start()
     {
         sprite = GetComponent<SpriteRenderer>();
@@ -15,23 +17,37 @@ public class circleScript : MonoBehaviour
 
     public void Slider()
     {
-        if (isSlider)
+        lineDrawer sliderScript = slider.GetComponent<lineDrawer>();
+        sliderScript.DrawLine(transform.position);
+    }
+    
+    public void DeleteSlider(string hitormiss)
+    {
+        if (hitormiss == "hit")
         {
-            DeleteSlider();
+            slider.GetComponent<LineRenderer>().startColor = Color.white;
+            slider.GetComponent<LineRenderer>().endColor = Color.green;
+        }
+        if (hitormiss == "miss")
+        {
+            slider.GetComponent<LineRenderer>().startColor = Color.white;
+            slider.GetComponent<LineRenderer>().endColor = Color.red;
+        }
+        StartCoroutine(SliderWait(0.4f));
+        lineDrawer sliderScript = slider.GetComponent<lineDrawer>();
+        sliderScript.DeleteLine();
+    }
+
+    public void SliderHit(string hitormiss)
+    {
+        if (hitormiss == "hit")
+        {
+            slider.GetComponent<LineRenderer>().startColor = Color.green;
         }
         else
         {
-            lineDrawer sliderScript = slider.GetComponent<lineDrawer>();
-            sliderScript.DrawLine(transform.position);
-            isSlider = true;
+            slider.GetComponent<LineRenderer>().startColor = Color.red;
         }
-    }
-    
-    public void DeleteSlider()
-    {
-        lineDrawer sliderScript = slider.GetComponent<lineDrawer>();
-        sliderScript.DeleteLine();
-        isSlider = false;
     }
 
     public void Hit(string hitormiss)
@@ -66,6 +82,12 @@ public class circleScript : MonoBehaviour
         }
     }
 
+    IEnumerator SliderWait(float time)
+    {
+        yield return new WaitForSeconds(time);
+        slider.GetComponent<LineRenderer>().startColor = Color.blue;
+        slider.GetComponent<LineRenderer>().endColor = Color.white;
+    }
     IEnumerator Wait(float time)
     {
         yield return new WaitForSeconds(time);
