@@ -9,13 +9,14 @@ public class beatmapLoader : MonoBehaviour
     public List<string> beatmapCircles = new List<string>();
     public List<string> beatmapSliders = new List<string>();
     public List<string> randiBeatmap = new List<string>(); //RNG beatmap
+    public SaveLogic SaveBeatmap;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         initRandiBeatmap();
         CompileBeatmap();
-        player.initBeatmap(beatmap);
+        //player.initBeatmap(beatmap);
     }
 
     void initRandiBeatmap()
@@ -73,12 +74,12 @@ public class beatmapLoader : MonoBehaviour
             if (sliderIsBefore)
             {
                 sliderIsBefore = false;
-                beatmapCircles[i] = null;
+                beatmapCircles[i] = "";
             }
             if (i < beatmapSliders.Count() && beatmapSliders[i] != null && beatmapSliders[i].Any())
             {
                 sliderIsBefore = true;
-                beatmapCircles[i] = null;
+                beatmapCircles[i] = "";
             }
             List<List<string>> beat = new List<List<string>>();
             List<string> circles = new List<string>();
@@ -103,6 +104,7 @@ public class beatmapLoader : MonoBehaviour
             sliders.Add(beatmapSliders[i]);
             beatmap[i].Add(sliders);
         }
+        SaveBeatmap.SaveStringList(beatmap, "myBeatmap.json");
     }
     // Update is called once per frame
     void Update()

@@ -2,3 +2,9 @@
 
 # CS0162: Unreachable code detected
 dotnet_diagnostic.CS0162.severity = suggestion
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = none
