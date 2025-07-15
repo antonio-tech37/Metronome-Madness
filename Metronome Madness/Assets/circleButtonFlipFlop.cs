@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CircleButtonFlipFlop : MonoBehaviour
 {
-    private bool state;
+    public bool state;
 
     private void Start()
     {
@@ -21,7 +21,7 @@ public class CircleButtonFlipFlop : MonoBehaviour
         Debug.Log(state);
         UpdateFromState();
     }
-    void UpdateFromState()
+    public void UpdateFromState()
     {
         if (!state)
         {
@@ -31,6 +31,5 @@ public class CircleButtonFlipFlop : MonoBehaviour
         {
             GetComponent<SpriteRenderer>().color = Color.white;
         }
-        GetComponent<Material>().color = Color.green;
     }
 }
