@@ -41,22 +41,32 @@ public class BeatmapMakerLogic : MonoBehaviour
     {
         if (beat < beatmapCircles.Count())
         {
-            string beatCopy = beatmapCircles[beat];
+            foreach (char circle in beatmapCircles[beat])
+            {
+                int intCircle = circle - '0';
+                CircleButtonFlipFlop activeCircle = MatchStringToGameObject(intCircle);
+                activeCircle.state = true;
+            }
 
         }
     }
 
-    CircleButtonFlipFlop MatchStringToGameObject(string circle)
+    void InitActiveCircles()
+    {
+        l0.UpdateFromState();
+    }
+
+    CircleButtonFlipFlop MatchStringToGameObject(int circle)
     {
         if (beat % 2 == 0)
         {
             switch (circle)
             {
-                case "0":
+                case 0:
                     return r0;
-                case "1":
+                case 1:
                     return r1;
-                case "2":
+                case 2:
                     return r2;
             }
         }
@@ -64,11 +74,11 @@ public class BeatmapMakerLogic : MonoBehaviour
         {
             switch (circle)
             {
-                case "0":
+                case 0:
                     return l0;
-                case "1":
+                case 1:
                     return l1;
-                case "2":
+                case 2:
                     return l2;
             }
         }
